@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliniques de Trichoscopie - Accès sécurisé</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-teal: #0d4f4f;
+            --soft-gold: #c9a227;
+            --cream: #faf8f5;
+            --charcoal: #2d2d2d;
+            --muted-sage: #7a9e7e;
+            --warm-beige: #e8e0d5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--cream);
+            color: var(--charcoal);
+            min-height: 100vh;
+        }
+
+        /* LOGIN SCREEN STYLES */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--deep-teal) 0%, #1a6b6b 50%, #0d4f4f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        #login-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .login-container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            position: relative;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--deep-teal), #1a6b6b);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+        }
+
+        .login-container h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--charcoal);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-container p {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--charcoal);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 2px solid var(--warm-beige);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Source Sans Pro', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--deep-teal);
+            box-shadow: 0 0 0 4px rgba(13, 79, 79, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--deep-teal), #1a6b6b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Source Sans Pro', sans-serif;
+            margin-top: 1rem;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(13, 79, 79, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .secure-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .secure-badge::before {
+            content: '🔒';
+        }
+
+        /* MAIN CONTENT - Hidden by default */
+        #main-content {
+            display: none;
+        }
+
+        #main-content.visible {
+            display: block;
+        }
+
+        /* MAIN CONTENT STYLES */
+        header {
+            background: linear-gradient(135deg, var(--deep-teal) 0%, #1a6b6b 100%);
+            color: var(--cream);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            letter-spacing: 0.02em;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+            position: relative;
+        }
+
+        .gold-accent {
+            color: var(--soft-gold);
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 0.5rem 1.5rem;
+            border-right: 1px solid var(--warm-beige);
+        }
+
+        .stat-item:last-child {
+            border-right: none;
+        }
+
+        .stat-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--deep-teal);
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .map-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .map-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #map {
+            height: 600px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            z-index: 1;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            overflow: hidden;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            background: var(--deep-teal);
+            color: white;
+            padding: 1.2rem 1.5rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+        }
+
+        .filter-section {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--warm-beige);
+            background: var(--cream);
+        }
+
+        .filter-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--charcoal);
+            font-size: 0.9rem;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--deep-teal);
+            background: white;
+            color: var(--deep-teal);
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--deep-teal);
+            color: white;
+        }
+
+        .clinic-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .clinic-card {
+            background: var(--cream);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .clinic-card:hover {
+            transform: translateX(5px);
+            border-left-color: var(--soft-gold);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .clinic-card.france { border-left-color: #2563eb; }
+        .clinic-card.suisse { border-left-color: #dc2626; }
+        .clinic-card.belgique { border-left-color: #f59e0b; }
+
+        .clinic-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--charcoal);
+            margin-bottom: 0.3rem;
+        }
+
+        .clinic-city {
+            font-size: 0.85rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .clinic-city::before {
+            content: '📍';
+            font-size: 0.8rem;
+        }
+
+        .country-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.4rem;
+        }
+
+        .country-badge.france { background: #dbeafe; color: #1e40af; }
+        .country-badge.suisse { background: #fecaca; color: #991b1b; }
+        .country-badge.belgique { background: #fef3c7; color: #92400e; }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            padding: 0;
+        }
+
+        .popup-content {
+            font-family: 'Source Sans Pro', sans-serif;
+            min-width: 280px;
+        }
+
+        .popup-header {
+            background: linear-gradient(135deg, var(--deep-teal), #1a6b6b);
+            color: white;
+            padding: 1rem 1.2rem;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .popup-header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .popup-header .city {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .popup-body {
+            padding: 1rem 1.2rem;
+        }
+
+        .popup-body p {
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .popup-body strong {
+            color: var(--deep-teal);
+        }
+
+        .popup-services {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.8rem;
+        }
+
+        .popup-service-tag {
+            background: var(--warm-beige);
+            color: var(--charcoal);
+            padding: 0.3rem 0.7rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+        }
+
+        .popup-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.6rem 1.2rem;
+            background: var(--deep-teal);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            transition: background 0.3s ease;
+        }
+
+        .popup-link:hover {
+            background: #0a3d3d;
+        }
+
+        .legend {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .legend h4 {
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 0.5rem;
+            color: var(--charcoal);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+
+        footer a {
+            color: var(--deep-teal);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-container">
+            <div class="login-icon">🔬</div>
+            <h1>Accès Sécurisé</h1>
+            <p>Carte des cliniques de trichoscopie<br>France • Suisse • Belgique</p>
+            
+            <div class="error-message" id="error-msg">
+                Identifiant ou mot de passe incorrect
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Identifiant</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="login-btn">Se connecter</button>
+            </form>
+            
+            <div class="secure-badge">Connexion sécurisée</div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main-content">
+        <header>
+            <button class="logout-btn" onclick="logout()">🚪 Déconnexion</button>
+            <h1>Cliniques de <span class="gold-accent">Trichoscopie</span></h1>
+            <p>Diagnostic capillaire & Examen clinique du cuir chevelu</p>
+        </header>
+
+        <div class="container">
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number" id="total-count">0</div>
+                    <div class="stat-label">Cliniques</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="france-count">0</div>
+                    <div class="stat-label">France</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="suisse-count">0</div>
+                    <div class="stat-label">Suisse</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="belgique-count">0</div>
+                    <div class="stat-label">Belgique</div>
+                </div>
+            </div>
+
+            <div class="map-wrapper">
+                <div id="map"></div>
+                
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        🔬 Établissements référencés
+                    </div>
+                    <div class="filter-section">
+                        <label>Filtrer par pays :</label>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" data-country="all">Tous</button>
+                            <button class="filter-btn" data-country="france">🇫🇷 France</button>
+                            <button class="filter-btn" data-country="suisse">🇨🇭 Suisse</button>
+                            <button class="filter-btn" data-country="belgique">🇧🇪 Belgique</button>
+                        </div>
+                    </div>
+                    <div class="clinic-list" id="clinic-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Carte indicative des cliniques proposant des services de trichoscopie et d'examen clinique du cuir chevelu.</p>
+            <p>Données issues de recherches publiques — Vérifiez les informations auprès des établissements avant toute consultation.</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // ========== AUTHENTIFICATION ==========
+        // Credentials encodés (obfuscation basique)
+        const _0x4a2f = ['bXVzY2xlY2FmZQ==', 'VHJpY2hvc2NvcGllMjAyNiY='];
+        const validUser = atob(_0x4a2f[0]);
+        const validPass = atob(_0x4a2f[1]);
+
+        // Vérifier si déjà connecté (session storage)
+        if (sessionStorage.getItem('authenticated') === 'true') {
+            showMainContent();
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === validUser && password === validPass) {
+                sessionStorage.setItem('authenticated', 'true');
+                showMainContent();
+            } else {
+                document.getElementById('error-msg').classList.add('show');
+                document.getElementById('password').value = '';
+                setTimeout(() => {
+                    document.getElementById('error-msg').classList.remove('show');
+                }, 3000);
+            }
+        });
+
+        function showMainContent() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-content').classList.add('visible');
+            initMap();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('authenticated');
+            location.reload();
+        }
+
+        // ========== CARTE ET DONNÉES ==========
+        let map;
+        let markers = [];
+
+        function initMap() {
+            // Données des cliniques
+            const clinics = [
+                // FRANCE
+                {
+                    name: "Centre Sabouraud",
+                    city: "Paris",
+                    address: "1 Avenue Claude Vellefaux, 75010 Paris",
+                    lat: 48.8737,
+                    lng: 2.3683,
+                    country: "france",
+                    phone: "01 42 49 39 39",
+                    services: ["Trichoscopie", "Trichogramme", "Biopsie", "Dermatologie"],
+                    website: "https://www.centre-sabouraud.com"
+                },
+                {
+                    name: "CMCC Paris",
+                    city: "Paris",
+                    address: "14 rue Théodore de Banville, 75017 Paris",
+                    lat: 48.8832,
+                    lng: 2.2988,
+                    country: "france",
+                    phone: "01 84 83 14 00",
+                    services: ["Trichoscopie", "TrichoScale", "Biopsie", "Greffe FUE/FUT"],
+                    website: "https://cmccparis.com"
+                },
+                {
+                    name: "Dr Pierre Bouhanna",
+                    city: "Paris",
+                    address: "CMCC Paris, 75017 Paris",
+                    lat: 48.8840,
+                    lng: 2.2995,
+                    country: "france",
+                    phone: "01 42 27 15 44",
+                    services: ["Trichoscopie", "Trichoscan", "Greffe capillaire"],
+                    website: "https://bouhanna.com"
+                },
+                {
+                    name: "Dr Eric Bouhanna",
+                    city: "Paris",
+                    address: "Paris",
+                    lat: 48.8680,
+                    lng: 2.3150,
+                    country: "france",
+                    phone: "",
+                    services: ["Trichoscopie", "Exploration clinique", "Greffe"],
+                    website: "https://docteurbouhanna.org"
+                },
+                {
+                    name: "Clinique des Champs-Élysées",
+                    city: "Paris",
+                    address: "Paris 8ème",
+                    lat: 48.8698,
+                    lng: 2.3073,
+                    country: "france",
+                    phone: "",
+                    services: ["Trichologie", "Diagnostic capillaire", "Traitements"],
+                    website: "https://www.crpce.com"
+                },
+                {
+                    name: "Cheveux Plus - Sakina Hakkoum",
+                    city: "Paris",
+                    address: "Paris",
+                    lat: 48.8566,
+                    lng: 2.3522,
+                    country: "france",
+                    phone: "",
+                    services: ["Trichologie", "Diagnostic capillaire", "Soins naturels"],
+                    website: "https://cheveuxplus.com"
+                },
+                {
+                    name: "Hair Science Clinic",
+                    city: "Paris / Antibes",
+                    address: "Paris et Antibes",
+                    lat: 48.8600,
+                    lng: 2.3400,
+                    country: "france",
+                    phone: "",
+                    services: ["Trichogramme", "Trichoscopie", "Biopsie capillaire"],
+                    website: "https://hasci.fr"
+                },
+                {
+                    name: "Cap'Clinic",
+                    city: "Marseille",
+                    address: "18 rue Negresko, 13008 Marseille",
+                    lat: 43.2700,
+                    lng: 5.3900,
+                    country: "france",
+                    phone: "",
+                    services: ["Trichoscopie TrichoLab", "Greffe FUE", "PRP", "Mésothérapie"],
+                    website: "https://www.capclinic.fr"
+                },
+                {
+                    name: "Dr Eve Youssof",
+                    city: "Marseille",
+                    address: "8ème arrondissement, Marseille",
+                    lat: 43.2650,
+                    lng: 5.3850,
+                    country: "france",
+                    phone: "",
+                    services: ["Diagnostic capillaire", "Greffe FUE", "PRP"],
+                    website: "https://www.eve-youssof-esthetique.fr"
+                },
+                {
+                    name: "HIND Clinique de Beauté",
+                    city: "Montpellier",
+                    address: "Montpellier",
+                    lat: 43.6108,
+                    lng: 3.8767,
+                    country: "france",
+                    phone: "",
+                    services: ["Trichoscopie TrichoLAB", "Diagnostic capillaire"],
+                    website: "https://www.hind-clinique-de-beaute.fr"
+                },
+                {
+                    name: "Clinique Crillon",
+                    city: "Lyon",
+                    address: "84 Boulevard des Belges, Lyon",
+                    lat: 45.7720,
+                    lng: 4.8560,
+                    country: "france",
+                    phone: "",
+                    services: ["Bilan capillaire", "Greffe FUE", "PRP"],
+                    website: "https://cheveux.cliniquecrillon.com"
+                },
+                {
+                    name: "Dr Jean-Pierre Gobin",
+                    city: "Lyon",
+                    address: "39 bis rue de Marseille, 69007 Lyon",
+                    lat: 45.7480,
+                    lng: 4.8450,
+                    country: "france",
+                    phone: "",
+                    services: ["Médecine esthétique", "Traitements capillaires"],
+                    website: ""
+                },
+                {
+                    name: "Dr Quentin Magis",
+                    city: "Lyon",
+                    address: "Lyon",
+                    lat: 45.7600,
+                    lng: 4.8350,
+                    country: "france",
+                    phone: "",
+                    services: ["Dermatologie", "Pathologies capillaires"],
+                    website: ""
+                },
+                {
+                    name: "Clinique du Cheveu Bordeaux",
+                    city: "Bordeaux",
+                    address: "70 cours Verdun, 33000 Bordeaux",
+                    lat: 44.8378,
+                    lng: -0.5792,
+                    country: "france",
+                    phone: "",
+                    services: ["Diagnostic HAIRVIEW", "Soins capillaires", "Traitements"],
+                    website: "https://bordeaux.cliniqueducheveu.fr"
+                },
+                {
+                    name: "Centre capillaire HAROJ",
+                    city: "Mulhouse",
+                    address: "Mulhouse",
+                    lat: 47.7508,
+                    lng: 7.3359,
+                    country: "france",
+                    phone: "",
+                    services: ["Diagnostic", "Greffe DHI", "FUE"],
+                    website: ""
+                },
+                {
+                    name: "Dr Henry Sabatier",
+                    city: "Nice",
+                    address: "Centre-ville, Nice",
+                    lat: 43.7102,
+                    lng: 7.2620,
+                    country: "france",
+                    phone: "",
+                    services: ["Greffe FUE", "Diagnostic capillaire"],
+                    website: ""
+                },
+                {
+                    name: "HairClinic",
+                    city: "Nice / Cannes / Marseille",
+                    address: "Nice, Cannes, Marseille",
+                    lat: 43.7000,
+                    lng: 7.2500,
+                    country: "france",
+                    phone: "",
+                    services: ["Microgreffes", "Diagnostic", "FUE/FUT"],
+                    website: "https://www.hairclinic.fr"
+                },
+
+                // SUISSE
+                {
+                    name: "Clinique de la Croix d'Or",
+                    city: "Genève",
+                    address: "Genève, Suisse",
+                    lat: 46.2044,
+                    lng: 6.1432,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Diagnostic capillaire", "Greffe FUE/FUT", "PRP"],
+                    website: "https://www.cliniqueducheveu-croixdor.ch"
+                },
+                {
+                    name: "Clinique du Lac - Dr Bayol",
+                    city: "Genève",
+                    address: "Rue des Eaux-Vives 116, 1207 Genève",
+                    lat: 46.2000,
+                    lng: 6.1600,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Trichoscopie Fotofinder", "Diagnostic TrichoLAB", "Greffe"],
+                    website: "https://www.cliniquedulac.com"
+                },
+                {
+                    name: "Aesthetics Clinic",
+                    city: "Genève",
+                    address: "Genève",
+                    lat: 46.1980,
+                    lng: 6.1500,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Trichoscopie", "TrichoScale", "Cellules souches"],
+                    website: "https://www.dermatologue-geneve.ch"
+                },
+                {
+                    name: "Clinique MORE",
+                    city: "Genève / Lausanne / Berne / Zurich",
+                    address: "4 cliniques en Suisse",
+                    lat: 46.5200,
+                    lng: 6.6300,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Diagnostic gratuit", "Mésothérapie", "PRP", "Greffe FUE"],
+                    website: "https://laclinique-more.ch"
+                },
+                {
+                    name: "ANAGEN Clinic",
+                    city: "Genève / Lausanne / Berne / Bâle / Zurich",
+                    address: "5 cliniques en Suisse",
+                    lat: 46.9480,
+                    lng: 7.4474,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Diagnostic en ligne", "Consultation clinique", "Greffe", "PRP"],
+                    website: "https://anagen.clinic"
+                },
+                {
+                    name: "Centre de Soins Capillaires",
+                    city: "Lausanne",
+                    address: "Centre-ville, Lausanne",
+                    lat: 46.5197,
+                    lng: 6.6323,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Trichologie", "Microcaméra", "Bilan capillaire", "Soins naturels"],
+                    website: "https://www.centredesoinscapillaires.ch"
+                },
+                {
+                    name: "Hairsss Lausanne",
+                    city: "Lausanne",
+                    address: "Lausanne",
+                    lat: 46.5250,
+                    lng: 6.6400,
+                    country: "suisse",
+                    phone: "",
+                    services: ["Trichoscopie HD", "Traitements personnalisés"],
+                    website: "https://hairsss.ch"
+                },
+                {
+                    name: "CHUV - Service de Dermatologie",
+                    city: "Lausanne",
+                    address: "Avenue de Beaumont 29, 1011 Lausanne",
+                    lat: 46.5260,
+                    lng: 6.6420,
+                    country: "suisse",
+                    phone: "+41 21 314 1111",
+                    services: ["Trichologie", "Consultation spécialisée"],
+                    website: "https://www.chuv.ch/dermatologie"
+                },
+
+                // BELGIQUE
+                {
+                    name: "CHU Saint-Pierre - Clinique du Cheveu",
+                    city: "Bruxelles",
+                    address: "Bruxelles",
+                    lat: 50.8403,
+                    lng: 4.3517,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Trichoscopie", "Diagnostic", "Pathologies du cheveu"],
+                    website: "https://www.stpierre-bru.be"
+                },
+                {
+                    name: "Hair & Face Clinic - Dr Vujovic",
+                    city: "Wemmel (Bruxelles)",
+                    address: "Wemmel",
+                    lat: 50.9100,
+                    lng: 4.3100,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Pathologies du cheveu", "Greffe capillaire", "Dermatologie"],
+                    website: "https://hair-face-clinic.be"
+                },
+                {
+                    name: "The Clinic Bruxelles",
+                    city: "Bruxelles",
+                    address: "Bruxelles",
+                    lat: 50.8450,
+                    lng: 4.3600,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Dermatologie", "Diagnostic capillaire", "Greffe"],
+                    website: "https://theclinicbruxelles.be"
+                },
+                {
+                    name: "Clinique du Cheveu Bruxelles",
+                    city: "Bruxelles (Schaerbeek)",
+                    address: "1030 Bruxelles",
+                    lat: 50.8660,
+                    lng: 4.3800,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Diagnostic HAIRVIEW", "Soins capillaires", "Traitements"],
+                    website: "https://bruxelles1030.cliniqueducheveu.eu"
+                },
+                {
+                    name: "BHR Clinic - Dr Bisanga",
+                    city: "Bruxelles",
+                    address: "Bruxelles",
+                    lat: 50.8500,
+                    lng: 4.3700,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Trichoscopie TrichoLAB", "Greffe FUE", "PRP"],
+                    website: "https://www.bhrclinic.com"
+                },
+                {
+                    name: "Le Centre du Cheveu",
+                    city: "Bruxelles",
+                    address: "Avenue Louise, Bruxelles",
+                    lat: 50.8300,
+                    lng: 4.3650,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Mésothérapie", "Électroporation", "Diagnostic"],
+                    website: "https://www.lecentreducheveu.be"
+                },
+                {
+                    name: "Centre Médical Walzin",
+                    city: "Région bruxelloise",
+                    address: "Belgique",
+                    lat: 50.8200,
+                    lng: 4.4000,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Trichoscopie", "Trichogramme", "Biopsie", "Dermatologie"],
+                    website: "https://www.centre-medical-walzin.be"
+                },
+                {
+                    name: "Embourg Medical",
+                    city: "Liège (Embourg)",
+                    address: "Liège-Embourg",
+                    lat: 50.5900,
+                    lng: 5.5800,
+                    country: "belgique",
+                    phone: "",
+                    services: ["Trichoscopie", "Trichogramme", "Biopsie", "Greffe FUE/FUT", "PRP"],
+                    website: "https://embourgmedical.be"
+                }
+            ];
+
+            // Initialisation de la carte
+            map = L.map('map').setView([47.0, 4.5], 6);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Création des icônes personnalisées
+            function createIcon(country) {
+                const colors = {
+                    france: '#2563eb',
+                    suisse: '#dc2626',
+                    belgique: '#f59e0b'
+                };
+                
+                return L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="
+                        background: ${colors[country]};
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 50%;
+                        border: 3px solid white;
+                        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+                    "></div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                    popupAnchor: [0, -12]
+                });
+            }
+
+            // Ajout des marqueurs
+            clinics.forEach(clinic => {
+                const popupContent = `
+                    <div class="popup-content">
+                        <div class="popup-header">
+                            <h3>${clinic.name}</h3>
+                            <div class="city">${clinic.city}, ${clinic.country.charAt(0).toUpperCase() + clinic.country.slice(1)}</div>
+                        </div>
+                        <div class="popup-body">
+                            <p><strong>Adresse :</strong> ${clinic.address}</p>
+                            ${clinic.phone ? `<p><strong>Tél :</strong> ${clinic.phone}</p>` : ''}
+                            <div class="popup-services">
+                                ${clinic.services.map(s => `<span class="popup-service-tag">${s}</span>`).join('')}
+                            </div>
+                            ${clinic.website ? `<a href="${clinic.website}" target="_blank" class="popup-link">Visiter le site →</a>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                const marker = L.marker([clinic.lat, clinic.lng], {
+                    icon: createIcon(clinic.country)
+                }).addTo(map).bindPopup(popupContent);
+
+                markers.push({ marker, clinic });
+            });
+
+            // Mise à jour des statistiques
+            function updateStats(filteredClinics) {
+                document.getElementById('total-count').textContent = filteredClinics.length;
+                document.getElementById('france-count').textContent = filteredClinics.filter(c => c.country === 'france').length;
+                document.getElementById('suisse-count').textContent = filteredClinics.filter(c => c.country === 'suisse').length;
+                document.getElementById('belgique-count').textContent = filteredClinics.filter(c => c.country === 'belgique').length;
+            }
+
+            // Génération de la liste des cliniques
+            function renderClinicList(filteredClinics) {
+                const list = document.getElementById('clinic-list');
+                list.innerHTML = filteredClinics.map(clinic => `
+                    <div class="clinic-card ${clinic.country}" data-lat="${clinic.lat}" data-lng="${clinic.lng}">
+                        <div class="clinic-name">${clinic.name}</div>
+                        <div class="clinic-city">${clinic.city}</div>
+                        <span class="country-badge ${clinic.country}">
+                            ${clinic.country === 'france' ? '🇫🇷 France' : 
+                              clinic.country === 'suisse' ? '🇨🇭 Suisse' : '🇧🇪 Belgique'}
+                        </span>
+                    </div>
+                `).join('');
+
+                // Ajout des événements de clic
+                list.querySelectorAll('.clinic-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const lat = parseFloat(card.dataset.lat);
+                        const lng = parseFloat(card.dataset.lng);
+                        map.setView([lat, lng], 13);
+                        
+                        // Ouvrir le popup correspondant
+                        markers.forEach(({ marker, clinic }) => {
+                            if (clinic.lat === lat && clinic.lng === lng) {
+                                marker.openPopup();
+                            }
+                        });
+                    });
+                });
+            }
+
+            // Filtrage
+            let activeFilter = 'all';
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeFilter = btn.dataset.country;
+                    
+                    const filteredClinics = activeFilter === 'all' 
+                        ? clinics 
+                        : clinics.filter(c => c.country === activeFilter);
+                    
+                    renderClinicList(filteredClinics);
+                    updateStats(filteredClinics);
+
+                    // Afficher/masquer les marqueurs
+                    markers.forEach(({ marker, clinic }) => {
+                        if (activeFilter === 'all' || clinic.country === activeFilter) {
+                            marker.addTo(map);
+                        } else {
+                            map.removeLayer(marker);
+                        }
+                    });
+
+                    // Ajuster la vue
+                    if (activeFilter !== 'all') {
+                        const bounds = L.latLngBounds(
+                            filteredClinics.map(c => [c.lat, c.lng])
+                        );
+                        map.fitBounds(bounds, { padding: [50, 50] });
+                    } else {
+                        map.setView([47.0, 4.5], 6);
+                    }
+                });
+            });
+
+            // Légende
+            const legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'legend');
+                div.innerHTML = `
+                    <h4>Légende</h4>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2563eb;"></div>
+                        <span>France</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #dc2626;"></div>
+                        <span>Suisse</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f59e0b;"></div>
+                        <span>Belgique</span>
+                    </div>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+
+            // Initialisation
+            renderClinicList(clinics);
+            updateStats(clinics);
+        }
+    </script>
+</body>
+</html>
